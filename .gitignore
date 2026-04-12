@@ -1,0 +1,12 @@
+.env
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+output/*
+!output/.gitkeep
+.streamlit/secrets.toml
+*.egg-info/
+dist/
+build/
