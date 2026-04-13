@@ -62,10 +62,8 @@ Classify the intent(s) and extract parameters."""
         return _classify_openai(prompt)
     elif provider == "Ollama (local)":
         return _classify_ollama(prompt)
-    elif provider == "Groq LLM":
-        return _classify_groq(prompt)
     else:
-        # Default fallback → Groq (free)
+        # "Groq LLM" and any unknown provider → Groq (free)
         return _classify_groq(prompt)
 
 
@@ -117,7 +115,7 @@ def _classify_anthropic(prompt: str) -> dict:
         import anthropic
         client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
         response = client.messages.create(
-            model="claude-opus-4-5",
+            model="claude-haiku-4-5",
             max_tokens=512,
             system=INTENT_SYSTEM_PROMPT,
             messages=[{"role": "user", "content": prompt}]

@@ -11,7 +11,6 @@ Executes actions based on detected intent:
 """
 
 import os
-import json
 import re
 from pathlib import Path
 
@@ -197,10 +196,8 @@ def _llm_call(prompt: str, system: str, provider: str) -> str:
         return _llm_openai(prompt, system)
     elif provider == "Ollama (local)":
         return _llm_ollama(prompt, system)
-    elif provider == "Groq LLM":
-        return _llm_groq(prompt, system)
     else:
-        # Default fallback → Groq (free)
+        # "Groq LLM" and any unknown provider → Groq (free)
         return _llm_groq(prompt, system)
 
 
@@ -226,7 +223,7 @@ def _llm_anthropic(prompt, system):
     import anthropic
     client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
     r = client.messages.create(
-        model="claude-opus-4-5",
+        model="claude-haiku-4-5",
         max_tokens=2048,
         system=system,
         messages=[{"role": "user", "content": prompt}]

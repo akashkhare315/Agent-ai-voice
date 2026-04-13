@@ -1,10 +1,8 @@
 """
 Session Memory module.
-
 Maintains persistent in-session history of commands and actions
 to give the LLM context for follow-up commands.
 """
-
 from dataclasses import dataclass, field
 from typing import List
 import datetime
