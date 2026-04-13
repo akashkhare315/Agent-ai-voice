@@ -206,7 +206,7 @@ def _llm_groq(prompt, system):
         from groq import Groq
         client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
         r = client.chat.completions.create(
-            model="llama3-70b-8192",
+            model="llama-3.1-8b-instant",
             messages=[
                 {"role": "system", "content": system},
                 {"role": "user", "content": prompt}
