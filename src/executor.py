@@ -64,7 +64,6 @@ def _execute_compound(intents, params, transcript, output_dir, llm_provider):
     last_output = ""
 
     for intent in intents:
-        # Pass previous output as content for chained operations
         if intent == "summarize_text" and last_output:
             params["content"] = last_output
         elif intent == "create_file" and last_output:
@@ -91,7 +90,6 @@ def _execute_write_code(params, transcript, output_dir, llm_provider):
     language = params.get("language", "python")
     filename = params.get("filename") or _infer_filename(description, language)
 
-    # Ensure safe filename inside output/
     filename = _safe_filename(filename, default_ext=_lang_ext(language))
     filepath = output_dir / filename
 
@@ -140,10 +138,8 @@ def _execute_summarize(params, transcript, output_dir, llm_provider):
         llm_provider
     )
 
-    output = summary
     action = "Generated summary"
 
-    # Save if filename given or compound command
     if save_file:
         save_file = _safe_filename(save_file, default_ext=".txt")
         (output_dir / save_file).write_text(summary, encoding="utf-8")
@@ -201,7 +197,29 @@ def _llm_call(prompt: str, system: str, provider: str) -> str:
         return _llm_openai(prompt, system)
     elif provider == "Ollama (local)":
         return _llm_ollama(prompt, system)
-    return _llm_anthropic(prompt, system)
+    elif provider == "Groq LLM":
+        return _llm_groq(prompt, system)
+    else:
+        # Default fallback → Groq (free)
+        return _llm_groq(prompt, system)
+
+
+def _llm_groq(prompt, system):
+    try:
+        from groq import Groq
+        client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+        r = client.chat.completions.create(
+            model="llama3-70b-8192",
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=2048,
+            temperature=0.3
+        )
+        return r.choices[0].message.content
+    except Exception as e:
+        raise RuntimeError(f"Groq API error: {e}")
 
 
 def _llm_anthropic(prompt, system):
@@ -243,7 +261,6 @@ def _llm_ollama(prompt, system):
 
 def _infer_filename(text: str, language: str = "txt") -> str:
     text = text.lower()
-    # Extract meaningful words
     words = re.findall(r'\b[a-z]+\b', text)
     stop = {"a","an","the","create","make","write","generate","new","file","with","and","for","to","in"}
     meaningful = [w for w in words if w not in stop][:3]
@@ -252,8 +269,6 @@ def _infer_filename(text: str, language: str = "txt") -> str:
 
 
 def _safe_filename(name: str, default_ext: str = ".txt") -> str:
-    """Sanitize filename and ensure it stays within output/."""
-    # Remove path traversal
     name = Path(name).name
     name = re.sub(r'[^\w\.\-]', '_', name)
     if "." not in name:
@@ -275,5 +290,4 @@ def _lang_ext(language: str) -> str:
 
 
 def _strip_fences(text: str) -> str:
-    """Remove markdown code fences."""
     return re.sub(r"```[\w]*\n?|```", "", text).strip()

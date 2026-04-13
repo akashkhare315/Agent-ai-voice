@@ -47,7 +47,7 @@ Rules:
 """
 
 
-def classify_intent(text: str, provider: str = "Anthropic Claude", context: str = "") -> dict:
+def classify_intent(text: str, provider: str = "Groq LLM", context: str = "") -> dict:
     """Classify intent from transcribed text."""
 
     prompt = f"""Previous context: {context}
@@ -62,17 +62,18 @@ Classify the intent(s) and extract parameters."""
         return _classify_openai(prompt)
     elif provider == "Ollama (local)":
         return _classify_ollama(prompt)
+    elif provider == "Groq LLM":
+        return _classify_groq(prompt)
     else:
-        return _classify_anthropic(prompt)
+        # Default fallback → Groq (free)
+        return _classify_groq(prompt)
 
 
 def _parse_intent_json(raw: str) -> dict:
     """Robustly parse intent JSON from LLM output."""
-    # Strip markdown fences if present
     raw = re.sub(r"```json|```", "", raw).strip()
     try:
         data = json.loads(raw)
-        # Normalize: ensure 'intents' list exists
         if "intent" in data and "intents" not in data:
             data["intents"] = [data["intent"]]
         elif "intents" not in data:
@@ -91,6 +92,24 @@ def _parse_intent_json(raw: str) -> dict:
             "confidence": 0.3,
             "reasoning": "Failed to parse structured response"
         }
+
+
+def _classify_groq(prompt: str) -> dict:
+    try:
+        from groq import Groq
+        client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+        response = client.chat.completions.create(
+            model="llama3-70b-8192",
+            messages=[
+                {"role": "system", "content": INTENT_SYSTEM_PROMPT},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=512,
+            temperature=0.1
+        )
+        return _parse_intent_json(response.choices[0].message.content)
+    except Exception as e:
+        raise RuntimeError(f"Groq API error: {e}")
 
 
 def _classify_anthropic(prompt: str) -> dict:
