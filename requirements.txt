@@ -1,8 +1,10 @@
 anthropic==0.93.0
+anyio==4.13.0
 groq==1.1.2
 httpx==0.28.1
 openai==1.30.0
-streamlit==1.32.0
+streamlit==1.45.0
+pandas==2.1.0
+numpy==1.26.4
 requests==2.31.0
 python-dotenv==1.0.0
-protobuf==3.20.3
