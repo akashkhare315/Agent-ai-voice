@@ -15,8 +15,11 @@ st.set_page_config(
 )
 
 # Load custom CSS
-with open("static/style.css") as f:
-    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+try:
+    with open("static/style.css") as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+except FileNotFoundError:
+    pass  # CSS file optional, skip if missing
 
 from src.stt import transcribe_audio
 from src.intent import classify_intent
@@ -50,15 +53,15 @@ with st.sidebar:
 
     stt_provider = st.selectbox(
         "STT Provider",
-        ["OpenAI Whisper API", "Groq Whisper", "HuggingFace Whisper (local)"],
-        index=0,
+        ["Groq Whisper", "OpenAI Whisper API", "HuggingFace Whisper (local)"],
+        index=0,  # Default to Groq (free & fast)
         help="Choose how audio is transcribed to text"
     )
 
     llm_provider = st.selectbox(
         "LLM Provider",
         ["Anthropic Claude", "Ollama (local)", "OpenAI GPT-4"],
-        index=0,
+        index=0,  # Default to Anthropic Claude
         help="Choose the model for intent understanding"
     )
 
@@ -108,14 +111,16 @@ with left_col:
         )
         if uploaded:
             st.audio(uploaded, format=uploaded.type)
-            audio_bytes = uploaded.read()
             uploaded.seek(0)
             audio_bytes = uploaded.read()
     else:
-        audio_input = st.audio_input("Click to record", label_visibility="collapsed")
-        if audio_input:
-            audio_bytes = audio_input.read()
-            st.audio(audio_input)
+        try:
+            audio_input = st.audio_input("Click to record", label_visibility="collapsed")
+            if audio_input:
+                audio_bytes = audio_input.read()
+                st.audio(audio_input)
+        except AttributeError:
+            st.warning("⚠ Microphone recording not supported in this Streamlit version. Please use 'Upload Audio File' or type a command below.")
 
     # Text override
     with st.expander("✍ Or type a command directly (skip audio)"):
